@@ -1,5 +1,7 @@
 package com.t3h.birdandbomb;
 
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.util.Random;
 
 import javax.swing.ImageIcon;
@@ -7,37 +9,107 @@ import javax.swing.JLabel;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 
-public class MyPanel extends JPanel {
+public class GamePanel extends JPanel {
 	/** */
+	private static final long serialVersionUID = 1L;
 	private static final int SPEED_ROCKET = 5;
-	private static final int SPEED_BIRD = 10;
+	private static final int SPEED_BIRD = 20;
 	private static final int SPEED_BOMB = 5;
 	private static final int SPEED_HUNTER = 5;
+	private static final int SPEED_ITEMHEALTH = 2;
+	private Sound_sdjv sound;
+	public int highScore = 0;
 	private boolean bomb2 = false;
 	private int countHeart = 3;
 	private int score = 0;
 	private boolean muscleBird = false;
 	private Thread th1, th2;
-	private static final long serialVersionUID = 1L;
 	private boolean bombMove = true; // go down
 	private boolean bombMove2 = true;
 	private boolean rocket1 = false, rocket2 = false, rocket2Move = true,
 			hunter = false, hunterMove = true, rocket1Move = true;
+	private boolean itemHealth = false;
 	private int birdMove = 0; // 0: right - 1: left - 2: up - 3:down
 	private ImageIcon imageIcon, imageIcon2, imageIcon3, imageIcon4,
 			imageIcon5, imageIcon6, imageIcon7, imageIcon8, imageIcon9,
 			imageIcon10, imageHeart, imageBackground, imageRocket,
-			imageRocketUp, imageRocket2, imageRocket2Up, imageHunter;
+			imageRocketUp, imageRocket2, imageRocket2Up, imageHunter, imageItemHealth;
 	private JLabel labelBird, labelStrawberry, labelBomb, labelBomb2,
 			labelHome, labelMuscle, labelBackground, labelHeart1, labelHeart2,
-			labelHeart3, labelRocket, labelRocket2, labelHunter;
+			labelHeart3, labelHeart4, labelRocket, labelRocket2, labelHunter, labelItemHealth;
 	private JLabel labelScore;
 
-	public MyPanel() {
+	public GamePanel() {
 		initMyPanel();
 		initComps();
 		addComps();
 		bombMove();
+		pressKeyBoard();
+	}
+
+	private void calculateHeart(JLabel label) {
+		if (countHeart > 0) {
+			if (countHeart == 4) {
+				labelHeart4.setVisible(true);
+				labelHeart3.setVisible(true);
+				labelHeart2.setVisible(true);
+				labelHeart1.setVisible(true);
+			}
+			if (countHeart == 3) {
+				labelHeart4.setVisible(false);
+				labelHeart3.setVisible(true);
+				labelHeart2.setVisible(true);
+				labelHeart1.setVisible(true);
+			}
+			if (countHeart == 2) {
+				labelHeart4.setVisible(false);
+				labelHeart3.setVisible(false);
+				labelHeart2.setVisible(true);
+				labelHeart1.setVisible(true);
+			}
+			if (countHeart == 1) {
+				labelHeart4.setVisible(false);
+				labelHeart3.setVisible(false);
+				labelHeart2.setVisible(false);
+				labelHeart1.setVisible(true);
+			}
+			labelBird.setLocation(20, 250);
+			label.setVisible(true);
+		}
+		if (countHeart == 0) {
+			labelHeart4.setVisible(false);
+			labelHeart3.setVisible(false);
+			labelHeart2.setVisible(false);
+			labelHeart1.setVisible(false);
+			labelBird.setIcon(imageIcon8);
+			label.setVisible(false);
+			JOptionPane
+					.showMessageDialog(null, "Game Over");
+			createHighScore();
+
+		}
+	}
+	
+
+	private void pressKeyBoard() {
+		KeyAdapter keyAdapter = new KeyAdapter() {
+			@Override
+			public void keyPressed(KeyEvent e) {
+				if (e.getKeyCode() == KeyEvent.VK_LEFT) {
+					moveLeft();
+				}
+				if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+					moveRight();
+				}
+				if (e.getKeyCode() == KeyEvent.VK_UP) {
+					moveUp();
+				}
+				if (e.getKeyCode() == KeyEvent.VK_DOWN) {
+					moveDown();
+				}
+			}
+		};
+		addKeyListener(keyAdapter);
 	}
 
 	private int randFruit(int min, int max) {
@@ -72,7 +144,8 @@ public class MyPanel extends JPanel {
 						&& labelBird.getY() >= label.getY() && labelBird.getY() <= label
 						.getY() + icon.getIconHeight())) {
 			label.setVisible(false);
-
+			sound = new Sound_sdjv("D:/bum.wav");
+			sound.start();
 			return true;
 		} else
 			return false;
@@ -93,10 +166,12 @@ public class MyPanel extends JPanel {
 		add(labelHeart1);
 		add(labelHeart2);
 		add(labelHeart3);
+		add(labelHeart4);
 		add(labelBomb2);
 		add(labelRocket);
 		add(labelRocket2);
 		add(labelHunter);
+		add(labelItemHealth);
 		add(labelBackground);
 	}
 
@@ -181,6 +256,12 @@ public class MyPanel extends JPanel {
 		labelHeart3.setBounds(80, 10, imageHeart.getIconWidth(),
 				imageHeart.getIconHeight());
 
+		labelHeart4 = new JLabel();
+		labelHeart4.setIcon(imageHeart);
+		labelHeart4.setBounds(110, 10, imageHeart.getIconWidth(),
+				imageHeart.getIconHeight());
+		labelHeart4.setVisible(false);
+		
 		labelRocket = new JLabel();
 		imageRocket = new ImageIcon(getClass().getResource(
 				"/image/rocket_godown.png"));
@@ -207,6 +288,13 @@ public class MyPanel extends JPanel {
 		labelHunter.setBounds(520, 0, imageHunter.getIconWidth(),
 				imageHunter.getIconHeight());
 		labelHunter.setVisible(false);
+		
+		imageItemHealth = new ImageIcon(getClass().getResource("/image/itemHealth.png"));
+		labelItemHealth = new JLabel();
+		labelItemHealth.setIcon(imageItemHealth);
+		labelItemHealth.setVisible(false);
+		labelItemHealth.setBounds(350, 0, imageItemHealth.getIconWidth(), imageItemHealth.getIconWidth());
+		
 	}
 
 	private void initMyPanel() {
@@ -229,30 +317,12 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageIcon2, labelBomb)
 								&& muscleBird == false) {
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBird.setLocation(20, 250);
-								labelBomb.setVisible(true);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelBomb.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-
-							}
+							calculateHeart(labelBomb);
 						}
 						if (collision(imageIcon2, labelBomb)
 								&& muscleBird == true) {
@@ -270,31 +340,13 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageIcon2, labelBomb)
 								&& muscleBird == false) {
 
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBomb.setVisible(true);
-								labelBird.setLocation(20, 250);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelBomb.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-
-							}
+							calculateHeart(labelBomb);
 						}
 						if (collision(imageIcon2, labelBomb)
 								&& muscleBird == true) {
@@ -310,6 +362,13 @@ public class MyPanel extends JPanel {
 	private Runnable runnable2 = new Runnable() {
 		@Override
 		public void run() {
+			if(score == 15 && itemHealth == false) {
+				labelItemHealth.setVisible(true);
+				itemHealth = true;
+				Thread th7 = new Thread(runnable7);
+				th7.start();
+			}
+			
 			if (score == 12 && hunter == false) {
 				labelHunter.setVisible(true);
 				hunter = true;
@@ -385,6 +444,7 @@ public class MyPanel extends JPanel {
 			if (collision(imageIcon7, labelHome)) {
 				JOptionPane.showMessageDialog(null, "Chim về tổ" + "\n"
 						+ "Điểm của bạn là: " + score);
+				labelHome.setLocation(1000, 100);
 			}
 			if (collision(imageIcon10, labelMuscle)) {
 				muscleBird = true;
@@ -392,29 +452,11 @@ public class MyPanel extends JPanel {
 						imageIcon10.getIconHeight());
 				labelBird.setIcon(imageIcon10);
 			}
-			if (collision(imageHunter, labelHunter)
-					&& muscleBird == false) {
+			if (collision(imageHunter, labelHunter) && muscleBird == false) {
 				countHeart--;
-				if (countHeart > 0) {
-					if (countHeart == 2) {
-						labelHeart3.setVisible(false);
-					}
-					if (countHeart == 1) {
-						labelHeart2.setVisible(false);
-					}
-					labelBird.setLocation(20, 250);
-					labelHunter.setVisible(true);
-				}
-				if (countHeart == 0) {
-					labelHeart1.setVisible(false);
-					labelBird.setIcon(imageIcon8);
-					labelHunter.setVisible(false);
-					JOptionPane
-							.showMessageDialog(null, "Game Over");
-				}
+				calculateHeart(labelHunter);
 			}
-			if (collision(imageHunter, labelHunter)
-					&& muscleBird == true) {
+			if (collision(imageHunter, labelHunter) && muscleBird == true) {
 				labelHunter.setVisible(true);
 			}
 		}
@@ -464,30 +506,12 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageIcon2, labelBomb2)
 								&& muscleBird == false) {
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBird.setLocation(20, 250);
-								labelBomb2.setVisible(true);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelBomb2.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-
-							}
+							calculateHeart(labelBomb2);
 						}
 						if (collision(imageIcon2, labelBomb2)
 								&& muscleBird == true) {
@@ -505,31 +529,13 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageIcon2, labelBomb2)
 								&& muscleBird == false) {
 
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBomb2.setVisible(true);
-								labelBird.setLocation(20, 250);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelBomb2.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-
-							}
+							calculateHeart(labelBomb2);
 						}
 						if (collision(imageIcon2, labelBomb2)
 								&& muscleBird == true) {
@@ -547,7 +553,6 @@ public class MyPanel extends JPanel {
 
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
 			int x = 1;
 			while (x > 0) {
 				if (rocket1Move == true) {
@@ -563,29 +568,12 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageRocket, labelRocket)
 								&& muscleBird == false) {
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBird.setLocation(20, 250);
-								labelRocket.setVisible(true);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelRocket.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-							}
+							calculateHeart(labelRocket);
 						}
 						if (collision(imageRocket, labelRocket)
 								&& muscleBird == true) {
@@ -606,29 +594,12 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageRocket, labelRocket)
 								&& muscleBird == false) {
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBird.setLocation(20, 250);
-								labelRocket.setVisible(true);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelRocket.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-							}
+							calculateHeart(labelRocket);
 						}
 						if (collision(imageRocket, labelRocket)
 								&& muscleBird == true) {
@@ -645,7 +616,6 @@ public class MyPanel extends JPanel {
 
 		@Override
 		public void run() {
-			// TODO Auto-generated method stub
 			int x = 1;
 			while (x > 0) {
 				if (rocket2Move == true) {
@@ -660,29 +630,12 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageRocket2, labelRocket2)
 								&& muscleBird == false) {
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBird.setLocation(20, 250);
-								labelRocket2.setVisible(true);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelRocket2.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-							}
+							calculateHeart(labelRocket2);
 						}
 						if (collision(imageRocket2, labelRocket2)
 								&& muscleBird == true) {
@@ -702,29 +655,12 @@ public class MyPanel extends JPanel {
 						try {
 							Thread.sleep(50);
 						} catch (InterruptedException e) {
-							// TODO Auto-generated catch block
 							e.printStackTrace();
 						}
 						if (collision(imageRocket2, labelRocket2)
 								&& muscleBird == false) {
 							countHeart--;
-							if (countHeart > 0) {
-								if (countHeart == 2) {
-									labelHeart3.setVisible(false);
-								}
-								if (countHeart == 1) {
-									labelHeart2.setVisible(false);
-								}
-								labelBird.setLocation(20, 250);
-								labelRocket2.setVisible(true);
-							}
-							if (countHeart == 0) {
-								labelHeart1.setVisible(false);
-								labelBird.setIcon(imageIcon8);
-								labelRocket2.setVisible(false);
-								JOptionPane
-										.showMessageDialog(null, "Game Over");
-							}
+							calculateHeart(labelRocket2);
 						}
 						if (collision(imageRocket2, labelRocket2)
 								&& muscleBird == true) {
@@ -733,8 +669,7 @@ public class MyPanel extends JPanel {
 					}
 					rocket2Move = true;
 				}
-				
-				
+
 			}
 		}
 	};
@@ -755,7 +690,6 @@ public class MyPanel extends JPanel {
 							try {
 								Thread.sleep(50);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
@@ -768,45 +702,72 @@ public class MyPanel extends JPanel {
 							try {
 								Thread.sleep(50);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
 					}
-					hunterMove= false;
+					hunterMove = false;
 				} else {
 					int ranX = randFruit(0, 550);
 					if (ranX >= labelHunter.getX()) {
 						while (labelHunter.getX() < ranX) {
-							labelHunter.setBounds(labelHunter.getX()+SPEED_HUNTER,
-									labelHunter.getY(),
+							labelHunter.setBounds(labelHunter.getX()
+									+ SPEED_HUNTER, labelHunter.getY(),
 									imageHunter.getIconWidth(),
 									imageHunter.getIconHeight());
 							try {
 								Thread.sleep(50);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
 					} else {
 						while (labelHunter.getX() > ranX) {
-							labelHunter.setBounds(labelHunter.getX() -SPEED_HUNTER,
-									labelHunter.getY(),
+							labelHunter.setBounds(labelHunter.getX()
+									- SPEED_HUNTER, labelHunter.getY(),
 									imageHunter.getIconWidth(),
 									imageHunter.getIconHeight());
 							try {
 								Thread.sleep(50);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
 								e.printStackTrace();
 							}
 						}
 					}
-					hunterMove= true;
+					hunterMove = true;
 				}
 			}
 		}
 	};
 
+	private Runnable runnable7 = new Runnable() {
+		
+		@Override
+		public void run() {
+			while(labelItemHealth.getY()<=330) {
+				labelItemHealth.setBounds(350, labelItemHealth.getY() + SPEED_ITEMHEALTH , imageItemHealth.getIconWidth(), imageItemHealth.getIconHeight());
+				try {
+					Thread.sleep(50);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				if (collision(imageItemHealth, labelItemHealth)) {
+					countHeart++;
+					int birdX = labelBird.getX();
+					int birdY = labelBird.getY();
+					calculateHeart(labelItemHealth);
+					labelItemHealth.setVisible(false);
+					labelItemHealth.setLocation(1000, 1000);
+					labelBird.setLocation(birdX, birdY);
+				}
+			}
+		}
+	};
+	
+	public void createHighScore() {
+		if (score >= highScore) {
+			highScore = score;
+		}
+		System.out.println("HighScore: " + highScore);
+	}
 }
